@@ -1,0 +1,43 @@
+service: coding-challenge-api
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  stage: ${opt:stage, 'dev'} # The github actions pipeline will pass the branch name as the stage
+  region: ${opt:region, 'us-east-2'}
+  deploymentBucket:
+    name: ${aws:accountId}-serverless
+  timeout: 29
+  memorySize: 256
+  stackTags:
+    application: ${self:service}
+    environment: ${self:provider.stage}
+    ManagedBy: Serverless Framework
+custom:
+  deploymentBucket:
+    blockPublicAccess: true
+    tags:
+      - Key: Name
+        Value: ${self:provider.deploymentBucket.name}
+      - Key: environment
+        Value: ${self:provider.stage}
+  pythonRequirements:
+    dockerizePip: non-linux
+  serverless-offline:
+    httpPort: 4000
+
+functions:
+  get_grid:
+    handler: coding_challenge.get_grid
+    events:
+      - httpApi:
+          path: /
+          method: get
+          cors: true
+
+plugins:
+  - serverless-offline
+  - serverless-deployment-bucket
+  - serverless-plugin-resource-tagging
+  - serverless-python-requirements
